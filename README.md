@@ -4,7 +4,7 @@
 
 ## 预览
 
-🔗 https://tono.dev
+🔗 https://tonomemo.com
 
 ## 页面
 
