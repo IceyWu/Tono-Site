@@ -1,0 +1,221 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  LIUBAI_DESCRIPTION,
+  LIUBAI_LINKS,
+  LIUBAI_NAME,
+  LIUBAI_NAME_EN,
+  LIUBAI_TAGLINE,
+  SITE_NAME,
+} from "../../consts";
+
+const base = import.meta.env.BASE_URL;
+
+// 产品页结构化数据：让搜索引擎把「留白」识别为 Tono 旗下的应用
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: LIUBAI_NAME,
+  alternateName: LIUBAI_NAME_EN,
+  description: LIUBAI_DESCRIPTION,
+  applicationCategory: "ProductivityApplication",
+  operatingSystem: "iOS, iPadOS",
+  publisher: { "@type": "Organization", name: SITE_NAME },
+};
+---
+
+<BaseLayout
+  title={`${LIUBAI_NAME} · 随笔记录`}
+  description={LIUBAI_DESCRIPTION}
+  jsonLd={jsonLd}
+>
+  <div class="page">
+    <div class="bg-text" aria-hidden="true">{LIUBAI_NAME}</div>
+    <main>
+      <div class="title-wrap">
+        <h1>{LIUBAI_NAME}</h1>
+      </div>
+      <p class="subtitle">{LIUBAI_NAME_EN}</p>
+      <p class="tagline">{LIUBAI_TAGLINE}</p>
+      <div class="features">
+        <span>随笔记录</span>
+        <span class="dot" aria-hidden="true"></span>
+        <span>灵感捕捉</span>
+        <span class="dot" aria-hidden="true"></span>
+        <span>本地优先</span>
+      </div>
+      <div class="actions">
+        <a href="#" class="download">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
+            ></path>
+          </svg>
+          App Store
+        </a>
+      </div>
+    </main>
+
+    <footer>
+      <nav aria-label="留白 相关页面">
+        {
+          LIUBAI_LINKS.map(({ path, label }) => (
+            <a href={`${base}${path}`}>{label}</a>
+          ))
+        }
+      </nav>
+      <p class="copyright">
+        &copy; {new Date().getFullYear()} {LIUBAI_NAME_EN}. All rights reserved.
+      </p>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* 留白用暖白底，区别于站点默认的纯白。样式只随本页面下发 */
+  body {
+    background: #fafaf8;
+  }
+</style>
+
+<style>
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-serif-sc);
+    font-size: clamp(8rem, 22vw, 20rem);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: rgba(0, 0, 0, 0.025);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .title-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: var(--font-serif-sc);
+    font-size: clamp(3rem, 8vw, 5rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #1a1a1a;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.25em;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+  }
+
+  .tagline {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  .features {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: var(--color-text-tertiary);
+  }
+
+  .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ccc;
+  }
+
+  .actions {
+    margin-top: 2.5rem;
+  }
+
+  .download {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #fff;
+    background: #1a1a1a;
+    border-radius: 999px;
+    transition:
+      background 0.2s var(--ease-out),
+      transform 0.15s var(--ease-out);
+  }
+
+  .download:hover {
+    background: #333;
+    transform: scale(1.03);
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 2rem 0 1rem;
+  }
+
+  footer nav {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+
+  footer nav a {
+    color: var(--color-text-tertiary);
+  }
+
+  footer nav a:hover {
+    color: #333;
+  }
+
+  .copyright {
+    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+  }
+</style>

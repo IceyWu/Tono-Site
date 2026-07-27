@@ -21,10 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 版本由 package.json 的 packageManager 字段决定，避免两处配置漂移
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -33,7 +32,10 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm run check
 
       - name: Build
         run: pnpm run build

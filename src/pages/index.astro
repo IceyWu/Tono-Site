@@ -1,8 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { LIUBAI_NAME, LIUBAI_TAGLINE } from "../consts";
+
+const base = import.meta.env.BASE_URL;
 ---
 
-<BaseLayout title="Tono">
+<BaseLayout>
   <div class="page">
     <div class="bg-text" aria-hidden="true">Tono</div>
     <div class="gradient-blur" aria-hidden="true"></div>
@@ -14,6 +17,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </main>
 
     <footer>
+      <nav class="products" aria-label="产品">
+        <a href={`${base}liubai`} title={LIUBAI_TAGLINE}>
+          {LIUBAI_NAME}
+          <span class="arrow" aria-hidden="true">&rarr;</span>
+        </a>
+      </nav>
       <p class="copyright">
         &copy; {new Date().getFullYear()} Tono. All rights reserved.
       </p>
@@ -41,7 +50,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     transform: translate(-50%, -50%);
     font-family: "Playfair Display", serif;
     font-size: clamp(6rem, 18vw, 16rem);
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
     color: rgba(0, 0, 0, 0.025);
     white-space: nowrap;
@@ -99,7 +108,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .subtitle {
     margin-top: 0.75rem;
     font-size: 1rem;
-    color: #999;
+    color: var(--color-text-secondary);
     letter-spacing: 0.08em;
     font-weight: 400;
   }
@@ -107,7 +116,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .desc {
     margin-top: 0.5rem;
     font-size: 0.9375rem;
-    color: #bbb;
+    color: var(--color-text-tertiary);
   }
 
   /* ── Footer ── */
@@ -115,10 +124,38 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     padding: 2rem 0;
     position: relative;
     z-index: 1;
+    text-align: center;
+  }
+
+  /* 站内唯一通往产品页的入口，兼顾爬虫抓取与权重传递 */
+  .products {
+    margin-bottom: 0.875rem;
+    font-size: 0.9375rem;
+  }
+
+  .products a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .products a:hover {
+    color: #111;
+  }
+
+  .arrow {
+    transition: transform 0.2s var(--ease-out);
+  }
+
+  .products a:hover .arrow {
+    transform: translateX(3px);
   }
 
   .copyright {
     font-size: 0.8125rem;
-    color: #ccc;
+    color: var(--color-text-tertiary);
   }
 </style>

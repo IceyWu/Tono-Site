@@ -1,31 +1,137 @@
 ---
+// 自托管字体：避免依赖 fonts.googleapis.com（渲染阻塞 + 国内不可达）
+import "@fontsource/playfair-display/latin-700.css";
+// LCP 元素（h1）用的字重，单独 preload
+import playfair700 from "@fontsource/playfair-display/files/playfair-display-latin-700-normal.woff2?url";
+
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_LANG,
+  SITE_LOCALE,
+  SITE_NAME,
+  THEME_COLOR,
+  formatTitle,
+} from "../consts";
+
 interface Props {
-  title: string;
+  /** 页面标题，省略则使用站点默认标题；子页面会自动加 " — Tono" 后缀 */
+  title?: string;
   description?: string;
+  /** 社交分享图，站内相对路径或绝对 URL */
+  image?: string;
+  /** og:type，文章类页面传 "article" */
+  type?: "website" | "article";
+  /** 需要排除收录的页面（如 404、临时页）传 true */
+  noindex?: boolean;
+  /** 追加的 JSON-LD 结构化数据，会与站点级数据合并输出 */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const { title, description = "Tono" } = Astro.props;
+const {
+  title,
+  description = SITE_DESCRIPTION,
+  image = DEFAULT_OG_IMAGE,
+  type = "website",
+  noindex = false,
+  jsonLd,
+} = Astro.props;
+
+const pageTitle = formatTitle(title);
+const siteUrl = Astro.site ?? new URL("https://tonomemo.com");
+const canonical = new URL(Astro.url.pathname, siteUrl);
+const ogImage = new URL(image, siteUrl);
+
+// 站点级结构化数据：帮助搜索引擎建立品牌实体
+const baseJsonLd: Record<string, unknown>[] = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: siteUrl.href,
+    description: SITE_DESCRIPTION,
+    inLanguage: SITE_LANG,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: siteUrl.href,
+    logo: new URL("favicon.svg", siteUrl).href,
+  },
+];
+
+const extraJsonLd = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+const structuredData = [...baseJsonLd, ...extraJsonLd];
 ---
 
-<html lang="en">
+<html lang={SITE_LANG}>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    {
+      noindex ? (
+        <meta name="robots" content="noindex, nofollow" />
+      ) : (
+        <link rel="canonical" href={canonical.href} />
+      )
+    }
+
+    {/* 图标 */}
     <link
       rel="icon"
       type="image/svg+xml"
       href={`${import.meta.env.BASE_URL}favicon.svg`}
     />
-    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.ico`} />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content={description} />
-    <meta name="generator" content={Astro.generator} />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap"
-      rel="stylesheet"
+      rel="icon"
+      sizes="any"
+      href={`${import.meta.env.BASE_URL}favicon.ico`}
     />
-    <title>{title}</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href={`${import.meta.env.BASE_URL}apple-touch-icon.png`}
+    />
+    <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
+    <meta name="theme-color" content={THEME_COLOR} />
+
+    {/* 字体：只 preload 首屏 LCP 用到的那一个文件 */}
+    <link
+      rel="preload"
+      href={playfair700}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    {/* Open Graph */}
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content={SITE_LOCALE} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={pageTitle} />
+
+    {/* Twitter / X */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.href} />
+
+    <meta name="generator" content={Astro.generator} />
+
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(structuredData)}
+    />
   </head>
   <body>
     <slot />
@@ -35,8 +141,19 @@ const { title, description = "Tono" } = Astro.props;
 <style is:global>
   :root {
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /*
+     * 中文衬线栈：直接用系统自带字形。
+     * Noto Serif SC 只能从 fonts.googleapis.com 拿（渲染阻塞 + 国内不可达），
+     * 自托管整套 CJK 衬线又是几 MB 的代价，不值得。
+     */
+    --font-serif-sc: "Noto Serif SC", "Source Han Serif SC", "Songti SC",
+      "STSong", "SimSun", serif;
+
+    /* 文本层级：全部满足 WCAG AA 4.5:1 对比度 */
+    --color-text: #222;
+    --color-text-secondary: #595959;
+    --color-text-tertiary: #6b6b6b;
   }
 
   * {
@@ -50,7 +167,7 @@ const { title, description = "Tono" } = Astro.props;
       -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
       sans-serif;
     line-height: 1.6;
-    color: #222;
+    color: var(--color-text);
     background: #fff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -59,6 +176,13 @@ const { title, description = "Tono" } = Astro.props;
   a {
     color: inherit;
     text-decoration: none;
+  }
+
+  /* 键盘导航可见焦点环 */
+  :focus-visible {
+    outline: 2px solid #4a4aff;
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -11,6 +11,10 @@
 | 路径 | 说明 |
 |------|------|
 | `/` | 首页 |
+| `/liubai` | 留白 · 产品页 |
+| `/liubai/user-protocol` | 留白 · 用户协议 |
+| `/liubai/privacy` | 留白 · 隐私政策 |
+| `/liubai/support` | 留白 · 支持与常见问题 |
 
 ## 技术栈
 

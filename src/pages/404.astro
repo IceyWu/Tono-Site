@@ -1,0 +1,74 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="页面不存在"
+  description="抱歉，这个页面找不到了。"
+  noindex={true}
+>
+  <div class="page">
+    <main>
+      <p class="code">404</p>
+      <h1>页面不存在</h1>
+      <p class="desc">你访问的地址可能已经变更或从未存在。</p>
+      <a class="back" href={import.meta.env.BASE_URL}>返回首页</a>
+    </main>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .code {
+    font-family: "Playfair Display", serif;
+    font-size: clamp(4rem, 12vw, 7rem);
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.08);
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    margin-top: 0.5rem;
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .desc {
+    margin-top: 0.5rem;
+    font-size: 0.9375rem;
+    color: var(--color-text-tertiary);
+  }
+
+  .back {
+    margin-top: 2rem;
+    padding: 0.625rem 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    transition:
+      border-color 0.3s var(--ease-out),
+      background 0.3s var(--ease-out);
+  }
+
+  .back:hover {
+    border-color: #222;
+    background: #fafafa;
+  }
+</style>
