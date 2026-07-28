@@ -1,0 +1,216 @@
+---
+/**
+ * 首页：一个文件产出 / 与 /en/ 两份静态页。
+ * 产品列表来自 collection，加一个 app 会自动出现在这里。
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { LOCALES, localeParam, localeUrl, useTranslations, type Locale } from "../../i18n";
+import { getProducts, productCopy, type Product } from "../../lib/catalog";
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return LOCALES.map((locale) => ({
+    params: { locale: localeParam(locale) },
+    props: { locale, products },
+  }));
+}
+
+const { locale, products } = Astro.props as {
+  locale: Locale;
+  products: Product[];
+};
+const t = useTranslations(locale);
+---
+
+<BaseLayout>
+  <div class="page">
+    <div class="gradient-blur" aria-hidden="true"></div>
+
+    <main>
+      <h1>Tono</h1>
+      <p class="subtitle">{t.home.eyebrow}</p>
+      <p class="desc">{t.home.tagline}</p>
+    </main>
+
+    <footer>
+      <nav class="products" aria-label={t.home.productsNav}>
+        {
+          products.map((product) => (
+            <a
+              href={localeUrl(locale, product.id)}
+              title={productCopy(product, locale).tagline}
+            >
+              {product.data.name}
+              <span class="arrow" aria-hidden="true">
+                &rarr;
+              </span>
+            </a>
+          ))
+        }
+      </nav>
+      <p class="copyright">
+        &copy; {new Date().getFullYear()} Tono. All rights reserved.
+      </p>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    min-height: 100vh;
+    /* 移动端地址栏收起时 100vh 会溢出，dvh 跟随可视高度 */
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /*
+   * 右上角的渐变晕光。
+   * 用整层背景渐变而不是「小方块 + blur」：百分比定位天然跟视口成比例，
+   * 也不会因为被 overflow 裁切而在边缘留下条带。
+   */
+  .gradient-blur {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        ellipse 40% 32% at 94% -6%,
+        var(--bloom-violet) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 32% 26% at 76% 0%,
+        var(--bloom-peach) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 28% 24% at 100% 16%,
+        var(--bloom-sky) 0%,
+        transparent 70%
+      );
+    pointer-events: none;
+  }
+
+  /* 窄屏上晕光占的视野比例天然更大，再压一档 */
+  @media (max-width: 640px) {
+    .gradient-blur {
+      opacity: 0.7;
+    }
+  }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    font-family: "Playfair Display", serif;
+    /* 大字号收紧字距：字母放大后视觉间隔会显得过宽 */
+    font-size: clamp(3.5rem, 10vw, 6rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--color-text-strong);
+    animation: rise 320ms var(--ease-out) both;
+  }
+
+  /* 英文三词是装饰，压成从属于字标的 eyebrow，不与主标题争字号 */
+  .subtitle {
+    margin-top: 1.25rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-weight: 400;
+    animation: rise 320ms var(--ease-out) 60ms both;
+  }
+
+  /* 字距在极窄屏会把 eyebrow 顶到边缘，收一档 */
+  @media (max-width: 400px) {
+    .subtitle {
+      letter-spacing: 0.16em;
+    }
+  }
+
+  /*
+   * 标语才是这屏真正要读的一行，给它主要的正文分量。
+   * 英文标语比中文长得多，窄屏必然换行 —— 限宽 + balance 让两行长度接近，
+   * 居中则避免换行后看起来像左对齐的一段正文。
+   */
+  .desc {
+    margin-top: 1rem;
+    max-width: 22ch;
+    font-size: 1.0625rem;
+    letter-spacing: 0.02em;
+    text-align: center;
+    text-wrap: balance;
+    color: var(--color-text-secondary);
+    animation: rise 320ms var(--ease-out) 120ms both;
+  }
+
+  /* ── Footer ── */
+  footer {
+    padding: 2rem 0;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    animation: rise 320ms var(--ease-out) 180ms both;
+  }
+
+  /* 通往产品页的入口，兼顾爬虫抓取与权重传递 */
+  .products {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-bottom: 0.875rem;
+    font-size: 0.9375rem;
+  }
+
+  .products a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    transition:
+      color 0.2s var(--ease-out),
+      transform 0.14s var(--ease-out);
+  }
+
+  /* 触屏上 :hover 会在点按时误触发，所以只在真正有指针的设备上给 hover */
+  @media (hover: hover) and (pointer: fine) {
+    .products a:hover {
+      color: var(--color-text-strong);
+    }
+
+    .products a:hover .arrow {
+      transform: translateX(3px);
+    }
+  }
+
+  /* 按下即反馈，让链接摸起来是「听得见」的 */
+  .products a:active {
+    transform: scale(0.97);
+  }
+
+  .arrow {
+    transition: transform 0.2s var(--ease-out);
+  }
+
+  .copyright {
+    font-size: 0.8125rem;
+    color: var(--color-text-tertiary);
+  }
+</style>

@@ -1,53 +1,31 @@
 /**
- * 站点级元信息的单一来源。
- * 新增页面时只需从这里取默认值，避免各页面重复硬编码域名 / 品牌名。
+ * 站点级、与语言无关的元信息。
+ * 需要翻译的文案一律放在 src/i18n/ui.ts，不要写在这里。
  */
 
 /** 品牌名，用于 title 模板与结构化数据 */
 export const SITE_NAME = "Tono";
 
-/** 首页标题（不套模板） */
-export const SITE_TITLE = "Tono — 专注创造，让工具回归本质";
-
 /**
- * 默认描述。控制在 70~160 字符区间，
- * 太短搜索引擎会自行截取页面文本，太长会被截断。
+ * 站点根地址。astro.config 的 `site` 由此导入，
+ * 端点（robots.txt / BaseLayout）在拿不到 Astro.site 时也回退到同一份值，
+ * 避免域名散落在多个文件里。
  */
-export const SITE_DESCRIPTION =
-  "Tono 打造简单、强大、完全属于你的创作工具。去掉多余的干扰，把注意力还给正在创造的内容。";
-
-/** 站点语言，同时用于 <html lang> 与 og:locale */
-export const SITE_LANG = "zh-CN";
-export const SITE_LOCALE = "zh_CN";
+export const SITE_URL = "https://tonomemo.com";
 
 /** 默认社交分享图（构建期由 src/pages/og.png.ts 生成） */
 export const DEFAULT_OG_IMAGE = "/og.png";
 
-/** 浏览器地址栏 / 移动端状态栏主题色，与 body 背景保持一致 */
-export const THEME_COLOR = "#ffffff";
+/**
+ * 浏览器地址栏 / 移动端状态栏主题色，与 body 背景（--color-bg）保持一致。
+ * 两个值分别对应浅色与深色主题，靠 <meta media> 切换。
+ */
+export const THEME_COLOR = "#fdfdfc";
+export const THEME_COLOR_DARK = "#131211";
 
 /**
- * title 模板：首页用原始标题，子页面统一加品牌后缀。
- * 后续新增产品页时传入页面标题即可，例如 formatTitle("Memo") → "Memo — Tono"
+ * 产品文档在页脚里的排列顺序。
+ * 文件系统按字母序返回，但「用户协议 → 隐私政策 → 支持」才是阅读顺序，
+ * 所以这里显式指定；不在表里的文档排到最后。
  */
-export function formatTitle(title?: string): string {
-  if (!title || title === SITE_NAME) return SITE_TITLE;
-  return `${title} — ${SITE_NAME}`;
-}
-
-/* ────────────────────────────────
- * 产品：留白 / LiuBai
- * ──────────────────────────────── */
-
-export const LIUBAI_NAME = "留白";
-export const LIUBAI_NAME_EN = "LiuBai";
-export const LIUBAI_TAGLINE = "在空白处，写下你的灵感";
-export const LIUBAI_DESCRIPTION =
-  "留白是一款安静记录灵感的随笔应用。本地优先，不上传、不追踪，打开就写，把注意力留给文字本身。";
-
-/** 留白的页面路径（相对 BASE_URL），首页页脚与法务页导航共用 */
-export const LIUBAI_LINKS = [
-  { path: "liubai/user-protocol", label: "用户协议" },
-  { path: "liubai/privacy", label: "隐私政策" },
-  { path: "liubai/support", label: "支持" },
-] as const;
+export const DOC_ORDER = ["user-protocol", "privacy", "support"] as const;

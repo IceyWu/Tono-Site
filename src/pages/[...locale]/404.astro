@@ -1,0 +1,99 @@
+---
+/**
+ * 404：产出 /404.html 与 /en/404。
+ * GitHub Pages 只认根目录那份 404.html，英文用户由页面里的语言检测脚本转到 /en/404。
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { LOCALES, localeParam, localeUrl, useTranslations, type Locale } from "../../i18n";
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({
+    params: { locale: localeParam(locale) },
+    props: { locale },
+  }));
+}
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+---
+
+<BaseLayout
+  title={t.notFound.title}
+  description={t.notFound.description}
+  noindex={true}
+>
+  <div class="page">
+    <main>
+      <p class="code">404</p>
+      <h1>{t.notFound.title}</h1>
+      <p class="desc">{t.notFound.detail}</p>
+      <a class="back" href={localeUrl(locale)}>{t.notFound.back}</a>
+    </main>
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    min-height: 100vh;
+    /* 移动端地址栏收起时 100vh 会溢出，dvh 跟随可视高度 */
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .code {
+    font-family: "Playfair Display", serif;
+    font-size: clamp(4rem, 12vw, 7rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--wash-soft);
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    /* line-height: 1 的巨大数字底部几乎贴着标题，留出一档间距避免视觉碰撞 */
+    margin-top: 1.25rem;
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .desc {
+    margin-top: 0.5rem;
+    font-size: 0.9375rem;
+    color: var(--color-text-tertiary);
+  }
+
+  .back {
+    margin-top: 2rem;
+    padding: 0.625rem 1.5rem;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 999px;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    transition:
+      border-color 0.3s var(--ease-out),
+      background 0.3s var(--ease-out),
+      transform 0.14s var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .back:hover {
+      border-color: var(--color-text-secondary);
+      background: var(--wash-hover);
+    }
+  }
+
+  .back:active {
+    transform: scale(0.97);
+  }
+</style>

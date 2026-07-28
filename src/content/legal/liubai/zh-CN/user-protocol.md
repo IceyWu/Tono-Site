@@ -1,10 +1,8 @@
 ---
-layout: ../../layouts/LiubaiLegalLayout.astro
 title: 用户协议
 description: 留白（LiuBai）用户协议：服务内容、用户行为规范、知识产权归属与免责声明。
+updated: 2026-07-25
 ---
-
-留白 (LiuBai) · 更新日期：2026年7月25日
 
 ## 一、总则
 

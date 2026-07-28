@@ -1,0 +1,181 @@
+---
+/**
+ * 外观切换按钮：跟随系统 → 浅色 → 深色 → 跟随系统 循环。
+ *
+ * 保留「跟随系统」这一档是有意的：只给浅/深两态的话，
+ * 用户一旦点过就再也回不到系统设置了。
+ *
+ * 实际的主题解析发生在 BaseLayout <head> 里的内联脚本中（首屏绘制前完成，
+ * 避免闪白），这里只负责按钮本身的交互。
+ *
+ * 无障碍标签需要跟随页面语言，所以译文由服务端渲染进 data-* ，
+ * 客户端脚本只负责按当前档位取用，不在脚本里硬编码任何文案。
+ */
+import { useTranslations, type Locale } from "../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const t = useTranslations(Astro.props.locale);
+---
+
+<button
+  type="button"
+  class="theme-toggle"
+  data-theme-toggle
+  data-label-prefix={t.chrome.themeLabel}
+  data-label-system={t.chrome.themeChoices.system}
+  data-label-light={t.chrome.themeChoices.light}
+  data-label-dark={t.chrome.themeChoices.dark}
+  aria-label={t.chrome.themeLabel}
+>
+  {/* 半明半暗的圆：跟随系统 */}
+  <svg
+    class="icon icon-system"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="8" r="5.5"></circle>
+    <path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor" stroke="none"></path>
+  </svg>
+
+  {/* 太阳：浅色 */}
+  <svg
+    class="icon icon-light"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="8" r="3.25"></circle>
+    <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M12.95 3.05l-1.06 1.06M4.11 11.89l-1.06 1.06"
+    ></path>
+  </svg>
+
+  {/* 月亮：深色 */}
+  <svg
+    class="icon icon-dark"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M13.5 9.9A5.9 5.9 0 0 1 6.1 2.5a5.9 5.9 0 1 0 7.4 7.4z"></path>
+  </svg>
+</button>
+
+<style>
+  /* 定位交给外层的 .site-chrome，这里只管按钮自身 */
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 0.2s var(--ease-out),
+      background 0.2s var(--ease-out),
+      transform 0.14s var(--ease-out);
+    animation: rise 320ms var(--ease-out) 240ms both;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .theme-toggle:hover {
+      color: var(--color-text);
+      background: var(--wash-hover);
+    }
+  }
+
+  .theme-toggle:active {
+    transform: scale(0.92);
+  }
+
+  .icon {
+    width: 1rem;
+    height: 1rem;
+    display: none;
+  }
+
+  /* 图标显示当前所处的档位，由 <html data-theme-choice> 决定 */
+  :root[data-theme-choice="system"] .icon-system,
+  :root[data-theme-choice="light"] .icon-light,
+  :root[data-theme-choice="dark"] .icon-dark {
+    display: block;
+  }
+</style>
+
+<script>
+  type Choice = "system" | "light" | "dark";
+
+  const ORDER: Choice[] = ["system", "light", "dark"];
+
+  const root = document.documentElement;
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+
+  /** 文案由服务端按页面语言写进 data-*，这里只取用 */
+  const labelFor = (choice: Choice) => {
+    const prefix = button?.dataset.labelPrefix ?? "";
+    const name =
+      choice === "light"
+        ? button?.dataset.labelLight
+        : choice === "dark"
+          ? button?.dataset.labelDark
+          : button?.dataset.labelSystem;
+    return `${prefix}: ${name ?? choice}`;
+  };
+
+  const currentChoice = (): Choice => {
+    const value = root.dataset.themeChoice;
+    return value === "light" || value === "dark" ? value : "system";
+  };
+
+  function apply(choice: Choice) {
+    const dark = choice === "system" ? media.matches : choice === "dark";
+
+    root.dataset.theme = dark ? "dark" : "light";
+    root.dataset.themeChoice = choice;
+
+    try {
+      if (choice === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", choice);
+    } catch {
+      // 隐私模式下 localStorage 可能不可写，选择不持久化但当前页仍然生效
+    }
+
+    // 地址栏 / 状态栏配色跟上：手动选择时那两条带 media 的 meta 不再匹配实际主题
+    const painted = getComputedStyle(document.body).backgroundColor;
+    document
+      .querySelectorAll('meta[name="theme-color"]')
+      .forEach((meta) => meta.setAttribute("content", painted));
+
+    const label = labelFor(choice);
+    button?.setAttribute("aria-label", label);
+    button?.setAttribute("title", label);
+  }
+
+  apply(currentChoice());
+
+  button?.addEventListener("click", () => {
+    const next = ORDER[(ORDER.indexOf(currentChoice()) + 1) % ORDER.length]!;
+    apply(next);
+  });
+
+  // 停在「跟随系统」时，系统主题变化要实时跟上
+  media.addEventListener("change", () => {
+    if (currentChoice() === "system") apply("system");
+  });
+</script>

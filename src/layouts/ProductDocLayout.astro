@@ -1,0 +1,170 @@
+---
+/**
+ * 产品文档（法务 / 帮助）页布局。
+ * 长文页不放水印：固定在视口中央的字影会一直在段落底下穿行，读条款时干扰明显。
+ */
+import BaseLayout from "./BaseLayout.astro";
+import ProductFooter from "../components/ProductFooter.astro";
+import { localeUrl, useTranslations, type Locale } from "../i18n";
+import type { Product } from "../lib/catalog";
+
+interface Props {
+  locale: Locale;
+  product: Product;
+  docSlugs: string[];
+  title: string;
+  description: string;
+  updated: Date;
+  /** false 表示正文是默认语言的回退内容，此时不应被索引 */
+  translated: boolean;
+}
+
+const { locale, product, docSlugs, title, description, updated, translated } =
+  Astro.props;
+
+const t = useTranslations(locale);
+
+// 日期按语言各自的习惯格式化：中文 2026年7月25日，英文 July 25, 2026
+const updatedLabel = new Intl.DateTimeFormat(locale, {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+}).format(updated);
+---
+
+<BaseLayout
+  title={`${title} · ${product.data.name}`}
+  description={description}
+  type="article"
+  theme={product.data.theme}
+  noindex={!translated}
+>
+  <div class="container">
+    <header>
+      <a href={localeUrl(locale, product.id)} class="brand">
+        {product.data.name}
+      </a>
+    </header>
+
+    <article>
+      <h1>{title}</h1>
+      <p class="meta">
+        {product.data.name} ({product.data.latinName}) &middot; {t.doc.updated}:
+        {updatedLabel}
+      </p>
+      <slot />
+    </article>
+
+    <ProductFooter
+      locale={locale}
+      product={product}
+      docSlugs={docSlugs}
+      variant="article"
+    />
+  </div>
+</BaseLayout>
+
+<style>
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 3rem;
+    position: relative;
+    line-height: 1.75;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 2.5rem;
+  }
+
+  .brand {
+    font-family: var(--font-serif-sc);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--color-heading-2);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .brand:hover {
+      color: var(--color-text-strong);
+    }
+  }
+
+  article {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    font-family: var(--font-serif-sc);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 1.25rem;
+    color: var(--color-text-strong);
+  }
+
+  /* 更新日期是元信息，不该和正文同权重 */
+  .meta {
+    font-size: 0.8125rem;
+    color: var(--color-text-tertiary);
+    letter-spacing: 0.02em;
+    padding-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  /* 章节层级靠字号差 + 上方留白一起建立 */
+  article :global(h2) {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin-top: 2.75rem;
+    margin-bottom: 0.875rem;
+    color: var(--color-heading-2);
+  }
+
+  article :global(h3) {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-heading-3);
+  }
+
+  article :global(p) {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  article :global(ul),
+  article :global(ol) {
+    margin-bottom: 0.75rem;
+    padding-left: 1.25rem;
+  }
+
+  article :global(li) {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.35rem;
+  }
+
+  article :global(a) {
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  article :global(a:hover) {
+    color: var(--color-text-strong);
+  }
+
+  article :global(strong) {
+    font-weight: 600;
+    color: var(--color-heading-2);
+  }
+</style>

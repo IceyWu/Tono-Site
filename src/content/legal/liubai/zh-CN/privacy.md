@@ -1,10 +1,8 @@
 ---
-layout: ../../layouts/LiubaiLegalLayout.astro
 title: 隐私政策
 description: 留白（LiuBai）的隐私政策：所有随笔内容仅保存在设备本地，不收集个人信息、不跟踪使用行为、不包含广告或分析 SDK。
+updated: 2026-07-25
 ---
-
-留白 (LiuBai) · 更新日期：2026年7月25日
 
 ## 一、引言
 

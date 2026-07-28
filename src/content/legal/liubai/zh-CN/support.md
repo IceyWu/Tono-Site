@@ -1,10 +1,8 @@
 ---
-layout: ../../layouts/LiubaiLegalLayout.astro
 title: 支持
 description: 留白（LiuBai）使用帮助与常见问题：如何记录随笔、数据是否同步云端、系统版本要求以及如何备份数据。
+updated: 2026-07-25
 ---
-
-留白 (LiuBai) · 最后更新：2026年7月25日
 
 欢迎使用留白。如果您有任何问题或遇到了困难，希望本页面能帮到您。
 

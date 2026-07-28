@@ -8,3 +8,11 @@ import { join } from "node:path";
  */
 export const fromRoot = (...segments: string[]) =>
   join(process.cwd(), ...segments);
+
+/**
+ * 拼上站点 base 前缀，生成站内链接。
+ * Astro 保证 BASE_URL 以 "/" 结尾，所以这里只需去掉入参开头多余的斜杠。
+ * 直接写 "/foo" 的绝对路径在 base 不是 "/" 时会 404，统一走这里。
+ */
+export const withBase = (path = "") =>
+  `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;

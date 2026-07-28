@@ -6,13 +6,26 @@ import playfair700 from "@fontsource/playfair-display/files/playfair-display-lat
 
 import {
   DEFAULT_OG_IMAGE,
-  SITE_DESCRIPTION,
-  SITE_LANG,
-  SITE_LOCALE,
   SITE_NAME,
+  SITE_URL,
   THEME_COLOR,
-  formatTitle,
+  THEME_COLOR_DARK,
 } from "../consts";
+import {
+  DEFAULT_LOCALE,
+  HREFLANG,
+  LOCALES,
+  LOCALE_MATCHERS,
+  OG_LOCALE,
+  formatTitle,
+  getRoutePath,
+  localeUrl,
+  toLocale,
+  useTranslations,
+} from "../i18n";
+import { withBase } from "../lib/paths";
+import LangToggle from "../components/LangToggle.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
 
 interface Props {
   /** 页面标题，省略则使用站点默认标题；子页面会自动加 " — Tono" 后缀 */
@@ -26,21 +39,43 @@ interface Props {
   noindex?: boolean;
   /** 追加的 JSON-LD 结构化数据，会与站点级数据合并输出 */
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** 页面配色：warm 用于「留白」系列页面的暖白底 */
+  theme?: "default" | "warm";
 }
+
+/** 由官方 i18n 路由推出当前语言；静态构建下它来自 URL 前缀 */
+const locale = toLocale(Astro.currentLocale);
+const t = useTranslations(locale);
+/** 各语言共用的逻辑路径，canonical / hreflang / 语言切换都基于它 */
+const route = getRoutePath(Astro.url);
 
 const {
   title,
-  description = SITE_DESCRIPTION,
+  description = t.site.description,
   image = DEFAULT_OG_IMAGE,
   type = "website",
   noindex = false,
   jsonLd,
+  theme = "default",
 } = Astro.props;
 
-const pageTitle = formatTitle(title);
-const siteUrl = Astro.site ?? new URL("https://tonomemo.com");
-const canonical = new URL(Astro.url.pathname, siteUrl);
-const ogImage = new URL(image, siteUrl);
+const pageTitle = formatTitle(locale, title);
+const siteUrl = Astro.site ?? new URL(SITE_URL);
+const canonical = new URL(localeUrl(locale, route), siteUrl);
+
+/** hreflang 互指，外加 x-default 指向默认语言 */
+const alternates = LOCALES.map((item) => ({
+  hreflang: HREFLANG[item],
+  href: new URL(localeUrl(item, route), siteUrl).href,
+}));
+
+/** 语言自动跳转用的目标表与匹配规则，交给 <head> 里的内联脚本 */
+const localeTargets = Object.fromEntries(
+  LOCALES.map((item) => [item, localeUrl(item, route)]),
+);
+const localeMatchers = LOCALE_MATCHERS;
+// 站内相对路径要先补上 base，绝对 URL 原样使用
+const ogImage = new URL(/^https?:\/\//.test(image) ? image : withBase(image), siteUrl);
 
 // 站点级结构化数据：帮助搜索引擎建立品牌实体
 const baseJsonLd: Record<string, unknown>[] = [
@@ -49,8 +84,8 @@ const baseJsonLd: Record<string, unknown>[] = [
     "@type": "WebSite",
     name: SITE_NAME,
     url: siteUrl.href,
-    description: SITE_DESCRIPTION,
-    inLanguage: SITE_LANG,
+    description: t.site.description,
+    inLanguage: locale,
   },
   {
     "@context": "https://schema.org",
@@ -65,38 +100,118 @@ const extraJsonLd = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 const structuredData = [...baseJsonLd, ...extraJsonLd];
 ---
 
-<html lang={SITE_LANG}>
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    {/*
+      主题必须在首屏绘制前定下来，否则深色偏好的用户会先看到一帧白底。
+      因此这段脚本内联、不打包、放在 <head> 靠前的位置。
+    */}
+    <script is:inline>
+      (() => {
+        let choice = "system";
+        try {
+          const stored = localStorage.getItem("theme");
+          if (stored === "light" || stored === "dark") choice = stored;
+        } catch {
+          /* 隐私模式下读不到 localStorage，按跟随系统处理 */
+        }
+        const dark =
+          choice === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+            : choice === "dark";
+        const root = document.documentElement;
+        root.dataset.theme = dark ? "dark" : "light";
+        root.dataset.themeChoice = choice;
+      })();
+    </script>
+    {/*
+      语言选择也要在首屏绘制前定下来，否则会先渲染一遍错误语言再跳转。
+      规则：用户手动选过就永远尊重手动选择，否则看浏览器语言；
+      两者都指向当前页面语言时什么都不做。
+    */}
+    <script
+      is:inline
+      define:vars={{
+        currentLocale: locale,
+        defaultLocale: DEFAULT_LOCALE,
+        localeTargets,
+        localeMatchers,
+      }}
+    >
+      (() => {
+        let stored = null;
+        try {
+          stored = localStorage.getItem("locale");
+        } catch {
+          /* 隐私模式下读不到，退回浏览器语言判断 */
+        }
+
+        const detect = () => {
+          const tags = navigator.languages?.length
+            ? navigator.languages
+            : [navigator.language || defaultLocale];
+
+          for (const tag of tags) {
+            for (const [locale, pattern] of Object.entries(localeMatchers)) {
+              if (new RegExp(pattern, "i").test(tag)) return locale;
+            }
+          }
+          return defaultLocale;
+        };
+
+        const preferred = stored && localeTargets[stored] ? stored : detect();
+        document.documentElement.dataset.prefLocale = preferred;
+
+        if (preferred !== currentLocale && localeTargets[preferred]) {
+          location.replace(
+            localeTargets[preferred] + location.search + location.hash,
+          );
+        }
+      })();
+    </script>
+
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {
       noindex ? (
         <meta name="robots" content="noindex, nofollow" />
       ) : (
-        <link rel="canonical" href={canonical.href} />
+        <Fragment>
+          <link rel="canonical" href={canonical.href} />
+          {alternates.map((alt) => (
+            <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+          ))}
+          <link
+            rel="alternate"
+            hreflang="x-default"
+            href={new URL(localeUrl(DEFAULT_LOCALE, route), siteUrl).href}
+          />
+        </Fragment>
       )
     }
 
     {/* 图标 */}
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href={`${import.meta.env.BASE_URL}favicon.svg`}
-    />
-    <link
-      rel="icon"
-      sizes="any"
-      href={`${import.meta.env.BASE_URL}favicon.ico`}
-    />
+    <link rel="icon" type="image/svg+xml" href={withBase("favicon.svg")} />
+    <link rel="icon" sizes="any" href={withBase("favicon.ico")} />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
-      href={`${import.meta.env.BASE_URL}apple-touch-icon.png`}
+      href={withBase("apple-touch-icon.png")}
     />
-    <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
-    <meta name="theme-color" content={THEME_COLOR} />
+    <link rel="manifest" href={withBase("manifest.webmanifest")} />
+    <meta
+      name="theme-color"
+      content={THEME_COLOR}
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content={THEME_COLOR_DARK}
+      media="(prefers-color-scheme: dark)"
+    />
 
     {/* 字体：只 preload 首屏 LCP 用到的那一个文件 */}
     <link
@@ -110,7 +225,12 @@ const structuredData = [...baseJsonLd, ...extraJsonLd];
     {/* Open Graph */}
     <meta property="og:type" content={type} />
     <meta property="og:site_name" content={SITE_NAME} />
-    <meta property="og:locale" content={SITE_LOCALE} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    {
+      LOCALES.filter((item) => item !== locale).map((item) => (
+        <meta property="og:locale:alternate" content={OG_LOCALE[item]} />
+      ))
+    }
     <meta property="og:url" content={canonical.href} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
@@ -133,14 +253,141 @@ const structuredData = [...baseJsonLd, ...extraJsonLd];
       set:html={JSON.stringify(structuredData)}
     />
   </head>
-  <body>
+  <body class={theme === "warm" ? "theme-warm" : undefined}>
+    {/* 判断「是否已滚动」的哨兵，比监听 scroll 事件便宜 */}
+    <div class="scroll-sentinel" aria-hidden="true" data-scroll-sentinel></div>
+
+    <div class="site-chrome">
+      <LangToggle locale={locale} route={route} />
+      <ThemeToggle locale={locale} />
+    </div>
+
     <slot />
   </body>
 </html>
 
+<script>
+  // 只关心「页面是否离开了顶部」，用哨兵元素代替 scroll 监听
+  const sentinel = document.querySelector("[data-scroll-sentinel]");
+
+  if (sentinel) {
+    new IntersectionObserver(([entry]) => {
+      document.documentElement.toggleAttribute(
+        "data-scrolled",
+        !entry?.isIntersecting,
+      );
+    }).observe(sentinel);
+  }
+</script>
+
+<style>
+  .scroll-sentinel {
+    position: absolute;
+    top: 0;
+    height: 1px;
+    width: 1px;
+    pointer-events: none;
+  }
+
+  /*
+   * 顶部控件层：常驻视口顶端，但整条是透明的，只有按钮可点。
+   * 页面在顶部时完全不可见；一旦滚动，浮出一层半透明模糊材质，
+   * 让正文从下方「淡出」而不是撞上按钮 —— 边缘用遮罩渐隐，不画分割线。
+   */
+  .site-chrome {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 20;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.125rem;
+    height: 3.25rem;
+    padding: 0 0.875rem;
+    padding-top: env(safe-area-inset-top);
+    padding-right: calc(0.875rem + env(safe-area-inset-right));
+    pointer-events: none;
+  }
+
+  .site-chrome > :global(*) {
+    pointer-events: auto;
+  }
+
+  .site-chrome::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* 旧浏览器没有 color-mix：退化成不透明的底色渐变，同样能挡住文字 */
+    background: linear-gradient(to bottom, var(--color-bg), transparent);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 82%, transparent),
+      transparent
+    );
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    /* 让模糊与底色一起向下淡出，避免出现一条硬边 */
+    mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out);
+  }
+
+  /* 「留白」系列是暖白底，材质要跟着换 */
+  :global(body.theme-warm) .site-chrome::before {
+    background: linear-gradient(to bottom, var(--color-bg-warm), transparent);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg-warm) 82%, transparent),
+      transparent
+    );
+  }
+
+  :global(:root[data-scrolled]) .site-chrome::before {
+    opacity: 1;
+  }
+
+  /* 关掉透明效果的用户：直接给不透明底色，不做模糊 */
+  @media (prefers-reduced-transparency: reduce) {
+    .site-chrome::before {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+</style>
+
 <style is:global>
   :root {
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+    /* 让滚动条、表单控件等原生 UI 跟随主题 */
+    color-scheme: light dark;
+
+    /* 极淡的暖白，比纯白少一点冷硬感 */
+    --color-bg: #fdfdfc;
+    /* 「留白」系列再暖一档，两种底色之间要拉开可辨识的差距 */
+    --color-bg-warm: #faf8f4;
+
+    /* 品牌色只用在焦点环上，正文保持中性 */
+    --color-brand: #8278ff;
+
+    --hairline: rgba(0, 0, 0, 0.07);
+    --hairline-strong: rgba(0, 0, 0, 0.14);
+    /* 极淡的墨色水洗层：水印、404 的巨大数字、悬停底色都取自这里 */
+    --wash-faint: rgba(28, 26, 25, 0.038);
+    --wash-soft: rgba(28, 26, 25, 0.08);
+    --wash-hover: rgba(28, 26, 25, 0.03);
+    --wash-dot: rgba(28, 26, 25, 0.22);
+
+    /* 反色块（App Store 按钮）：浅色下是深底白字，深色下反过来 */
+    --color-invert-bg: #1a1a1a;
+    --color-invert-bg-hover: #333;
+    --color-invert-text: #fff;
+
+    /* 首页右上角的渐变晕光 */
+    --bloom-violet: rgba(130, 120, 255, 0.16);
+    --bloom-peach: rgba(255, 170, 140, 0.13);
+    --bloom-sky: rgba(140, 200, 255, 0.11);
 
     /*
      * 中文衬线栈：直接用系统自带字形。
@@ -150,10 +397,59 @@ const structuredData = [...baseJsonLd, ...extraJsonLd];
     --font-serif-sc: "Noto Serif SC", "Source Han Serif SC", "Songti SC",
       "STSong", "SimSun", serif;
 
-    /* 文本层级：全部满足 WCAG AA 4.5:1 对比度 */
-    --color-text: #222;
-    --color-text-secondary: #595959;
-    --color-text-tertiary: #6b6b6b;
+    /* 文本层级：带一点暖度的中性灰，全部满足 WCAG AA 4.5:1 对比度 */
+    --color-text-strong: #111;
+    --color-text: #1c1a19;
+    --color-text-secondary: #57524d;
+    --color-text-tertiary: #6e6862;
+    /* 法务页的两级小标题 */
+    --color-heading-2: #2a2724;
+    --color-heading-3: #3d3934;
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  /*
+   * 深色主题：底色走暖向的近黑（不是纯黑），与浅色的暖白同源；
+   * 纯黑配纯白文字在大面积留白下会发晕，暖灰更耐看。
+   *
+   * 挂在 data-theme 上而不是 @media (prefers-color-scheme)，
+   * 是为了让顶部的切换按钮能覆盖系统偏好；这个属性由 <head> 内联脚本
+   * 在首屏绘制前写入，所以两者效果一致且不会闪屏。
+   */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --color-bg: #131211;
+    --color-bg-warm: #17150f;
+
+    /* 深底上品牌紫要提亮，否则焦点环几乎看不见 */
+    --color-brand: #a29cff;
+
+    --hairline: rgba(255, 255, 255, 0.1);
+    --hairline-strong: rgba(255, 255, 255, 0.18);
+    --wash-faint: rgba(255, 255, 255, 0.045);
+    --wash-soft: rgba(255, 255, 255, 0.09);
+    --wash-hover: rgba(255, 255, 255, 0.06);
+    --wash-dot: rgba(255, 255, 255, 0.25);
+
+    --color-invert-bg: #ebe8e4;
+    --color-invert-bg-hover: #fff;
+    --color-invert-text: #17150f;
+
+    /* 深底上晕光要更亮一点才透得出来 */
+    --bloom-violet: rgba(130, 120, 255, 0.2);
+    --bloom-peach: rgba(255, 170, 140, 0.14);
+    --bloom-sky: rgba(140, 200, 255, 0.13);
+
+    --color-text-strong: #f5f3f0;
+    --color-text: #ebe8e4;
+    --color-text-secondary: #a8a29b;
+    --color-text-tertiary: #8c8781;
+    --color-heading-2: #ddd8d2;
+    --color-heading-3: #c4bfb8;
   }
 
   * {
@@ -162,15 +458,32 @@ const structuredData = [...baseJsonLd, ...extraJsonLd];
     box-sizing: border-box;
   }
 
+  /* 首屏元素统一的入场：只在加载时播放一次，因此可以做 */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   body {
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
       sans-serif;
     line-height: 1.6;
     color: var(--color-text);
-    background: #fff;
+    background: var(--color-bg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 「留白」系列页面的暖白底 */
+  body.theme-warm {
+    background: var(--color-bg-warm);
   }
 
   a {
@@ -180,7 +493,7 @@ const structuredData = [...baseJsonLd, ...extraJsonLd];
 
   /* 键盘导航可见焦点环 */
   :focus-visible {
-    outline: 2px solid #4a4aff;
+    outline: 2px solid var(--color-brand);
     outline-offset: 3px;
     border-radius: 2px;
   }

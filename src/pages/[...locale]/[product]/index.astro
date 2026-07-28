@@ -1,0 +1,258 @@
+---
+/**
+ * 产品落地页模板：产出 /liubai、/en/liubai，以及将来任何新 app 的同名路径。
+ * 页面里没有任何写死的产品信息，全部来自 src/content/products/<id>.yaml。
+ */
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ProductFooter from "../../../components/ProductFooter.astro";
+import { SITE_NAME } from "../../../consts";
+import { LOCALES, localeParam, useTranslations, type Locale } from "../../../i18n";
+import {
+  docSlugsOf,
+  getDocs,
+  getProducts,
+  productCopy,
+  type Product,
+} from "../../../lib/catalog";
+
+export async function getStaticPaths() {
+  const [products, docs] = await Promise.all([getProducts(), getDocs()]);
+
+  return LOCALES.flatMap((locale) =>
+    products.map((product) => ({
+      params: { locale: localeParam(locale), product: product.id },
+      props: { locale, product, docSlugs: docSlugsOf(docs, product.id) },
+    })),
+  );
+}
+
+const { locale, product, docSlugs } = Astro.props as {
+  locale: Locale;
+  product: Product;
+  docSlugs: string[];
+};
+
+const t = useTranslations(locale);
+const copy = productCopy(product, locale);
+const { name, latinName, appStoreUrl, operatingSystem, theme } = product.data;
+
+// 产品页结构化数据：让搜索引擎把它识别为 Tono 旗下的应用
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name,
+  alternateName: latinName,
+  description: copy.description,
+  applicationCategory: "ProductivityApplication",
+  ...(operatingSystem ? { operatingSystem } : {}),
+  publisher: { "@type": "Organization", name: SITE_NAME },
+};
+
+// 还没上架时不渲染 <a>：指向 "#" 的链接对键盘和读屏用户都是死路
+const AppStoreTag = appStoreUrl ? "a" : "span";
+const appStoreAttrs = appStoreUrl
+  ? { href: appStoreUrl, rel: "noopener" }
+  : ({ "aria-disabled": "true" } as const);
+---
+
+<BaseLayout
+  title={`${name} · ${copy.titleSuffix}`}
+  description={copy.description}
+  jsonLd={jsonLd}
+  theme={theme}
+>
+  <div class="page">
+    <div class="bg-text" aria-hidden="true">{name}</div>
+    <main>
+      <div class="title-wrap">
+        <h1>{name}</h1>
+      </div>
+      <p class="subtitle">{latinName}</p>
+      <p class="tagline">{copy.tagline}</p>
+
+      <div class="features">
+        {
+          copy.features.map((feature, index) => (
+            <Fragment>
+              {index > 0 && <span class="dot" aria-hidden="true" />}
+              <span>{feature}</span>
+            </Fragment>
+          ))
+        }
+      </div>
+
+      <div class="actions">
+        <AppStoreTag
+          class:list={["download", { pending: !appStoreUrl }]}
+          {...appStoreAttrs}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
+            ></path>
+          </svg>
+          {appStoreUrl ? "App Store" : `App Store · ${t.product.comingSoon}`}
+        </AppStoreTag>
+      </div>
+    </main>
+
+    <ProductFooter locale={locale} product={product} docSlugs={docSlugs} />
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    min-height: 100vh;
+    /* 移动端地址栏收起时 100vh 会溢出，dvh 跟随可视高度 */
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /*
+   * 水印竖排、贴左侧出血。
+   * 居中的巨大字影会穿过拉丁名、标语和按钮，把内容衬得发脏；
+   * 竖排 CJK 沿边裁切是明确的设计意图，也永远不会压到居中的内容。
+   */
+  .bg-text {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translate(-30%, -50%);
+    writing-mode: vertical-rl;
+    font-family: var(--font-serif-sc);
+    font-size: clamp(7rem, 11vw, 10rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--wash-faint);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* 窄屏没有富余的边距容纳装饰，标题本身已经够有分量 */
+  @media (max-width: 900px) {
+    .bg-text {
+      display: none;
+    }
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .title-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: var(--font-serif-sc);
+    font-size: clamp(3rem, 8vw, 5rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    /* 字距会在右侧多留出一格，左移半格让字标真正居中 */
+    text-indent: 0.12em;
+    color: var(--color-text-strong);
+    line-height: 1.2;
+    animation: rise 320ms var(--ease-out) both;
+  }
+
+  .subtitle {
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.24em;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    animation: rise 320ms var(--ease-out) 60ms both;
+  }
+
+  /* 同首页标语：限宽 + balance，让英文在窄屏换行后仍是居中的两行 */
+  .tagline {
+    margin-top: 1.5rem;
+    max-width: 24ch;
+    font-size: 1.0625rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-wrap: balance;
+    animation: rise 320ms var(--ease-out) 120ms both;
+  }
+
+  .features {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+    color: var(--color-text-tertiary);
+    animation: rise 320ms var(--ease-out) 180ms both;
+  }
+
+  .dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--wash-dot);
+  }
+
+  /* CTA 之前留出更大的一档间距，让按钮从信息块里独立出来 */
+  .actions {
+    margin-top: 3rem;
+    animation: rise 320ms var(--ease-out) 240ms both;
+  }
+
+  .download {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-invert-text);
+    background: var(--color-invert-bg);
+    border-radius: 999px;
+    transition:
+      background 0.2s var(--ease-out),
+      transform 0.15s var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .download:not(.pending):hover {
+      background: var(--color-invert-bg-hover);
+      transform: scale(1.03);
+    }
+  }
+
+  /* 按下时轻微缩小，是「按钮听到了」最直接的信号 */
+  .download:not(.pending):active {
+    transform: scale(0.97);
+    transition-duration: 0.1s;
+  }
+
+  /* 未上架状态：保留视觉分量，但明确表示不可点 */
+  .download.pending {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--hairline-strong);
+    cursor: default;
+  }
+</style>

@@ -1,0 +1,90 @@
+---
+/**
+ * 产品页与文档页共用的页脚：文档导航 + 版权。
+ * 文档条目由 collection 决定，加一篇文档不用改这里。
+ */
+import {
+  interpolate,
+  localeUrl,
+  useTranslations,
+  type Locale,
+} from "../i18n";
+import type { Product } from "../lib/catalog";
+
+interface Props {
+  locale: Locale;
+  product: Product;
+  /** 该产品的文档 slug，顺序由 catalog 统一决定 */
+  docSlugs: string[];
+  /** 文档页需要与正文拉开更大间距并加一条分隔线 */
+  variant?: "landing" | "article";
+}
+
+const { locale, product, docSlugs, variant = "landing" } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<footer class={variant}>
+  <nav
+    aria-label={interpolate(t.product.docsNavLabel, { name: product.data.name })}
+  >
+    {
+      docSlugs.map((slug) => (
+        <a href={localeUrl(locale, `${product.id}/${slug}`)}>
+          {t.docs[slug as keyof typeof t.docs] ?? slug}
+        </a>
+      ))
+    }
+  </nav>
+  <p class="copyright">
+    &copy; {new Date().getFullYear()} {product.data.latinName}. All rights reserved.
+  </p>
+</footer>
+
+<style>
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+
+  footer.landing {
+    padding: 2rem 0 1rem;
+  }
+
+  footer.article {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--hairline);
+  }
+
+  nav {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+
+  nav a {
+    color: var(--color-text-tertiary);
+    transition:
+      color 0.2s var(--ease-out),
+      transform 0.14s var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    nav a:hover {
+      color: var(--color-text);
+    }
+  }
+
+  nav a:active {
+    transform: scale(0.97);
+  }
+
+  .copyright {
+    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+  }
+</style>

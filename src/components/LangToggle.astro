@@ -1,0 +1,79 @@
+---
+/**
+ * 语言切换：指向对应语言同一页面的链接。
+ *
+ * 用 <a> 而不是 <button>：语言在官方 i18n 模型里是 URL 的一部分，
+ * 用链接才能中键打开、复制地址、被爬虫抓到 hreflang 关系。
+ * data-astro-prefetch 让悬停时就把目标页取下来，点击几乎没有等待。
+ */
+import { LOCALES, localeUrl, useTranslations, type Locale } from "../i18n";
+
+interface Props {
+  locale: Locale;
+  /** 当前页面的逻辑路径（不含语言前缀） */
+  route: string;
+}
+
+const { locale, route } = Astro.props;
+const t = useTranslations(locale);
+
+// 两种语言时就是「另一个」；将来语言变多要换成下拉菜单
+const target = LOCALES.find((item) => item !== locale) ?? locale;
+---
+
+<a
+  class="lang-toggle"
+  href={localeUrl(target, route)}
+  hreflang={target}
+  data-astro-prefetch
+  data-locale-toggle={target}
+  aria-label={t.chrome.langSwitchAria}
+  title={t.chrome.langSwitchAria}
+>
+  {t.chrome.langSwitchLabel}
+</a>
+
+<style>
+  .lang-toggle {
+    display: grid;
+    place-items: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    letter-spacing: 0.06em;
+    color: var(--color-text-tertiary);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 0.2s var(--ease-out),
+      background 0.2s var(--ease-out),
+      transform 0.14s var(--ease-out);
+    animation: rise 320ms var(--ease-out) 200ms both;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .lang-toggle:hover {
+      color: var(--color-text);
+      background: var(--wash-hover);
+    }
+  }
+
+  .lang-toggle:active {
+    transform: scale(0.92);
+  }
+</style>
+
+<script>
+  // 手动选择优先于浏览器语言：记下来，之后访问不再自动跳转
+  document
+    .querySelector<HTMLAnchorElement>("[data-locale-toggle]")
+    ?.addEventListener("click", (event) => {
+      const link = event.currentTarget as HTMLAnchorElement;
+      try {
+        localStorage.setItem("locale", link.dataset.localeToggle ?? "");
+      } catch {
+        // 隐私模式下写不进去，本次跳转仍然有效
+      }
+    });
+</script>
