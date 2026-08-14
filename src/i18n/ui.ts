@@ -24,6 +24,10 @@ const zhCN = {
   product: {
     /** 未上架时按钮上的补充说明 */
     comingSoon: "即将上线",
+    /** TestFlight 尚未开放公开测试时的补充说明 */
+    betaSoon: "即将开放",
+    appStoreLabel: "在 App Store 查看 {name}",
+    testFlightLabel: "通过 TestFlight 测试 {name}",
     /** {name} 会被替换成产品字标 */
     docsNavLabel: "{name} 相关页面",
   },
@@ -81,6 +85,9 @@ const en: Dict = {
 
   product: {
     comingSoon: "Coming soon",
+    betaSoon: "Coming soon",
+    appStoreLabel: "View {name} on the App Store",
+    testFlightLabel: "Test {name} with TestFlight",
     docsNavLabel: "{name} pages",
   },
 

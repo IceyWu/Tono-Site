@@ -8,9 +8,14 @@ latinName: LiuBai
 
 # 页面配色：warm 为暖白底
 theme: warm
+version: "1.0"
+updated: 2026-08-14
 
 # 上架后填入链接，按钮会自动从「即将上线」变成可点击的 App Store
-appStoreUrl: null
+appStoreUrl: https://apps.apple.com/app/id6794540351
+
+# 创建公开测试链接后填入 https://testflight.apple.com/join/XXXXXXXX
+testFlightUrl: null
 
 operatingSystem: iOS, iPadOS
 
@@ -23,6 +28,7 @@ copy:
       - 随笔记录
       - 灵感捕捉
       - 本地优先
+    availabilityNote: App Store 暂不支持中国大陆地区
   en:
     titleSuffix: Notes & Ideas
     tagline: Write your ideas in the blank space
@@ -31,3 +37,4 @@ copy:
       - Quick notes
       - Catch ideas
       - Local-first
+    availabilityNote: Not currently available in mainland China

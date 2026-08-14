@@ -30,9 +30,22 @@ export const GET: APIRoute = () => {
         purpose: "any",
       },
       {
-        src: withBase("apple-touch-icon.png"),
+        src: withBase("icon-192.png"),
         type: "image/png",
-        sizes: "180x180",
+        sizes: "192x192",
+        purpose: "any",
+      },
+      {
+        src: withBase("icon-512.png"),
+        type: "image/png",
+        sizes: "512x512",
+        purpose: "any",
+      },
+      {
+        src: withBase("icon-maskable-512.png"),
+        type: "image/png",
+        sizes: "512x512",
+        purpose: "maskable",
       },
     ],
   };

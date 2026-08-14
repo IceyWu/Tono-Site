@@ -40,6 +40,12 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Verify generated pages and internal links
+        run: pnpm run verify
+
+      - name: Lighthouse quality budget
+        run: pnpm run lighthouse
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

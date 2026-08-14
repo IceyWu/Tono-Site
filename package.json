@@ -10,6 +10,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",
+    "test": "pnpm build && pnpm verify",
+    "verify": "node scripts/verify-build.mjs && html-validate \"dist/**/*.html\"",
+    "lighthouse": "lhci autorun",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -20,6 +23,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@lhci/cli": "^0.15.1",
+    "html-validate": "^11.6.2",
     "satori": "^0.29.0",
     "sharp": "^0.35.3",
     "typescript": "^6.0.3"

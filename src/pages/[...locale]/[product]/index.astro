@@ -5,8 +5,15 @@
  */
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import ProductFooter from "../../../components/ProductFooter.astro";
-import { SITE_NAME } from "../../../consts";
-import { LOCALES, localeParam, useTranslations, type Locale } from "../../../i18n";
+import { SITE_NAME, SITE_URL } from "../../../consts";
+import {
+  LOCALES,
+  interpolate,
+  localeParam,
+  localeUrl,
+  useTranslations,
+  type Locale,
+} from "../../../i18n";
 import {
   docSlugsOf,
   getDocs,
@@ -34,7 +41,18 @@ const { locale, product, docSlugs } = Astro.props as {
 
 const t = useTranslations(locale);
 const copy = productCopy(product, locale);
-const { name, latinName, appStoreUrl, operatingSystem, theme } = product.data;
+const {
+  name,
+  latinName,
+  appStoreUrl,
+  testFlightUrl,
+  operatingSystem,
+  theme,
+} = product.data;
+const productUrl = new URL(
+  localeUrl(locale, product.id),
+  Astro.site ?? SITE_URL,
+).href;
 
 // 产品页结构化数据：让搜索引擎把它识别为 Tono 旗下的应用
 const jsonLd = {
@@ -43,21 +61,45 @@ const jsonLd = {
   name,
   alternateName: latinName,
   description: copy.description,
+  url: productUrl,
   applicationCategory: "ProductivityApplication",
   ...(operatingSystem ? { operatingSystem } : {}),
+  ...(product.data.version ? { softwareVersion: product.data.version } : {}),
+  ...(appStoreUrl ? { downloadUrl: appStoreUrl } : {}),
+  isAccessibleForFree: true,
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  inLanguage: locale,
   publisher: { "@type": "Organization", name: SITE_NAME },
 };
 
 // 还没上架时不渲染 <a>：指向 "#" 的链接对键盘和读屏用户都是死路
 const AppStoreTag = appStoreUrl ? "a" : "span";
 const appStoreAttrs = appStoreUrl
-  ? { href: appStoreUrl, rel: "noopener" }
-  : ({ "aria-disabled": "true" } as const);
+  ? {
+      href: appStoreUrl,
+      rel: "noopener",
+      "aria-label": interpolate(t.product.appStoreLabel, { name }),
+    }
+  : ({ role: "link", "aria-disabled": "true" } as const);
+
+const TestFlightTag = testFlightUrl ? "a" : "span";
+const testFlightAttrs = testFlightUrl
+  ? {
+      href: testFlightUrl,
+      rel: "noopener",
+      "aria-label": interpolate(t.product.testFlightLabel, { name }),
+    }
+  : ({ role: "link", "aria-disabled": "true" } as const);
 ---
 
 <BaseLayout
   title={`${name} · ${copy.titleSuffix}`}
   description={copy.description}
+  image={localeUrl(locale, `${product.id}/og.png`).replace(/\/$/, "")}
   jsonLd={jsonLd}
   theme={theme}
 >
@@ -99,7 +141,40 @@ const appStoreAttrs = appStoreUrl
           </svg>
           {appStoreUrl ? "App Store" : `App Store · ${t.product.comingSoon}`}
         </AppStoreTag>
+        <TestFlightTag
+          class:list={[
+            "download",
+            "testflight",
+            { pending: !testFlightUrl },
+          ]}
+          {...testFlightAttrs}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 2.25c1.72 0 2.96 1.57 2.58 3.24l-1.3 5.61a1.31 1.31 0 0 1-2.56 0l-1.3-5.61C9.04 3.82 10.28 2.25 12 2.25Z"
+            />
+            <path
+              d="M12 2.25c1.72 0 2.96 1.57 2.58 3.24l-1.3 5.61a1.31 1.31 0 0 1-2.56 0l-1.3-5.61C9.04 3.82 10.28 2.25 12 2.25Z"
+              transform="rotate(120 12 12)"
+            />
+            <path
+              d="M12 2.25c1.72 0 2.96 1.57 2.58 3.24l-1.3 5.61a1.31 1.31 0 0 1-2.56 0l-1.3-5.61C9.04 3.82 10.28 2.25 12 2.25Z"
+              transform="rotate(240 12 12)"
+            />
+            <circle cx="12" cy="12" r="1.55" />
+          </svg>
+          {testFlightUrl
+            ? "TestFlight"
+            : `TestFlight · ${t.product.betaSoon}`}
+        </TestFlightTag>
       </div>
+      {copy.availabilityNote && <p class="availability">{copy.availabilityNote}</p>}
     </main>
 
     <ProductFooter locale={locale} product={product} docSlugs={docSlugs} />
@@ -217,6 +292,10 @@ const appStoreAttrs = appStoreUrl
   /* CTA 之前留出更大的一档间距，让按钮从信息块里独立出来 */
   .actions {
     margin-top: 3rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
     animation: rise 320ms var(--ease-out) 240ms both;
   }
 
@@ -254,5 +333,25 @@ const appStoreAttrs = appStoreUrl
     color: var(--color-text-secondary);
     border: 1px solid var(--hairline-strong);
     cursor: default;
+  }
+
+  .download.testflight:not(.pending) {
+    background: transparent;
+    color: var(--color-text-strong);
+    border: 1px solid var(--hairline-strong);
+  }
+
+  .availability {
+    margin-top: 0.875rem;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    letter-spacing: 0.02em;
+    animation: rise 320ms var(--ease-out) 280ms both;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .download.testflight:not(.pending):hover {
+      background: var(--wash-faint);
+    }
   }
 </style>

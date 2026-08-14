@@ -6,7 +6,7 @@
  * 那一页渲染默认语言的正文并标为 noindex（见 resolveDoc 的 translated）。
  */
 import ProductDocLayout from "../../../layouts/ProductDocLayout.astro";
-import { LOCALES, localeParam, type Locale } from "../../../i18n";
+import { LOCALES, localeParam, localeUrl, type Locale } from "../../../i18n";
 import {
   docSlugsOf,
   getDocs,
@@ -62,6 +62,10 @@ const { Content } = await render(entry);
   docSlugs={docSlugs}
   title={entry.data.title}
   description={entry.data.description}
+  image={localeUrl(
+    locale,
+    `${product.id}/${entry.id.split("/").at(-1)}/og.png`,
+  ).replace(/\/$/, "")}
   updated={entry.data.updated}
   translated={translated}
 >

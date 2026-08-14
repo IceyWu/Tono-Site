@@ -14,13 +14,22 @@ interface Props {
   docSlugs: string[];
   title: string;
   description: string;
+  image: string;
   updated: Date;
   /** false 表示正文是默认语言的回退内容，此时不应被索引 */
   translated: boolean;
 }
 
-const { locale, product, docSlugs, title, description, updated, translated } =
-  Astro.props;
+const {
+  locale,
+  product,
+  docSlugs,
+  title,
+  description,
+  image,
+  updated,
+  translated,
+} = Astro.props;
 
 const t = useTranslations(locale);
 
@@ -30,14 +39,30 @@ const updatedLabel = new Intl.DateTimeFormat(locale, {
   month: "long",
   day: "numeric",
 }).format(updated);
+
+const articleJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: title,
+  description,
+  dateModified: updated.toISOString(),
+  inLanguage: locale,
+  mainEntityOfPage: Astro.url.href,
+  publisher: {
+    "@type": "Organization",
+    name: "Tono",
+  },
+};
 ---
 
 <BaseLayout
   title={`${title} · ${product.data.name}`}
   description={description}
+  image={image}
   type="article"
   theme={product.data.theme}
   noindex={!translated}
+  jsonLd={articleJsonLd}
 >
   <div class="container">
     <header>

@@ -11,6 +11,7 @@ const productCopy = z.object({
   tagline: z.string(),
   description: z.string(),
   features: z.array(z.string()),
+  availabilityNote: z.string().optional(),
 });
 
 /**
@@ -26,7 +27,10 @@ const products = defineCollection({
     name: z.string(),
     latinName: z.string(),
     theme: z.enum(["default", "warm"]).default("default"),
+    version: z.string().optional(),
+    updated: z.coerce.date(),
     appStoreUrl: z.url().nullable().default(null),
+    testFlightUrl: z.url().nullable().default(null),
     operatingSystem: z.string().optional(),
     /** 默认语言必须有文案，其他语言可缺（缺时回退到默认语言） */
     copy: z

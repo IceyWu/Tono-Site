@@ -1,8 +1,42 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { SITE_URL } from './src/consts';
 import { DEFAULT_LOCALE, LOCALES } from './src/i18n/locales';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
+
+/** @param {string} file */
+const updatedFrom = (file) => {
+  if (!existsSync(file)) return undefined;
+  const match = readFileSync(file, 'utf8').match(/^updated:\s*([^\r\n]+)/m);
+  if (!match) return undefined;
+  const date = new Date(match[1].trim().replace(/^['"]|['"]$/g, ''));
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+};
+
+/** @param {string} pathname */
+const lastmodForPath = (pathname) => {
+  const segments = pathname.split('/').filter(Boolean);
+  const english = segments[0] === 'en';
+  if (english) segments.shift();
+  const locale = english ? 'en' : DEFAULT_LOCALE;
+  const [product, doc] = segments;
+  if (!product) return undefined;
+
+  if (doc) {
+    return updatedFrom(
+      join(root, 'src', 'content', 'legal', product, locale, `${doc}.md`),
+    );
+  }
+
+  return updatedFrom(
+    join(root, 'src', 'content', 'products', `${product}.yaml`),
+  );
+};
 
 // https://astro.build/config
 export default defineConfig({
@@ -38,7 +72,10 @@ export default defineConfig({
         return !/\.[a-z0-9]+$/i.test(pathname);
       },
       changefreq: 'weekly',
-      lastmod: new Date(),
+      serialize: (item) => {
+        const lastmod = lastmodForPath(new URL(item.url).pathname);
+        return lastmod ? { ...item, lastmod } : item;
+      },
     }),
   ],
 });
