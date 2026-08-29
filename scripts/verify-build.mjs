@@ -62,7 +62,7 @@ for (const icon of ["icon-192.png", "icon-512.png", "icon-maskable-512.png"]) {
 }
 
 const sitemap = readFileSync(join(dist, "sitemap-0.xml"), "utf8");
-assert.match(sitemap, /<loc>https:\/\/tonomemo\.com\/liubai\/<\/loc><lastmod>2026-08-14/, "Incorrect product lastmod");
-assert.match(sitemap, /<loc>https:\/\/tonomemo\.com\/liubai\/privacy\/<\/loc><lastmod>2026-07-25/, "Incorrect legal-page lastmod");
+assert.match(sitemap, /<loc>https:\/\/tonomemo\.com\/liubai\/<\/loc><lastmod>2026-08-29/, "Incorrect product lastmod");
+assert.match(sitemap, /<loc>https:\/\/tonomemo\.com\/liubai\/privacy\/<\/loc><lastmod>2026-08-29/, "Incorrect legal-page lastmod");
 
 console.log(`Verified ${htmlFiles.length} HTML pages and ${files.length} build artifacts.`);

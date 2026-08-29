@@ -9,7 +9,7 @@ latinName: LiuBai
 # 页面配色：warm 为暖白底
 theme: warm
 version: "1.0"
-updated: 2026-08-14
+updated: 2026-08-29
 
 # 上架后填入链接，按钮会自动从「即将上线」变成可点击的 App Store
 appStoreUrl: https://apps.apple.com/app/id6794540351
@@ -23,18 +23,18 @@ copy:
   zh-CN:
     titleSuffix: 随笔记录
     tagline: 在空白处，写下你的灵感
-    description: 留白是一款安静记录灵感的随笔应用。本地优先，不上传、不追踪，打开就写，把注意力留给文字本身。
+    description: 留白是一款安静记录灵感的随笔应用。本地优先；未开启 iCloud 仍可在设备上使用，开启后文字、照片与录音通过你的私人 iCloud 同步。不含广告与追踪。
     features:
       - 随笔记录
-      - 灵感捕捉
-      - 本地优先
+      - 照片与录音
+      - 私人 iCloud 同步
     availabilityNote: App Store 暂不支持中国大陆地区
   en:
     titleSuffix: Notes & Ideas
     tagline: Write your ideas in the blank space
-    description: LiuBai is a quiet notes app for catching ideas. Local-first — nothing uploaded, nothing tracked. Open it and write.
+    description: LiuBai is a quiet, local-first notes app. It works on-device without iCloud; when enabled, your words, photos, and recordings sync through your private iCloud. No ads or tracking.
     features:
-      - Quick notes
-      - Catch ideas
-      - Local-first
+      - Notes & ideas
+      - Photos & recordings
+      - Private iCloud sync
     availabilityNote: Not currently available in mainland China
