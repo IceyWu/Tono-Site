@@ -51,9 +51,13 @@ for (const file of htmlFiles) {
 }
 
 const product = readFileSync(join(dist, "liubai", "index.html"), "utf8");
+const productEn = readFileSync(join(dist, "en", "liubai", "index.html"), "utf8");
 assert.match(product, /https:\/\/apps\.apple\.com\/app\/id6794540351/, "Incorrect App Store URL");
-assert.match(product, /TestFlight\s*·\s*即将开放/, "Incorrect pending TestFlight state");
-assert.match(product, /aria-disabled="true"/, "Pending TestFlight control lacks aria-disabled");
+
+const testFlightLink = /<a\b[^>]*href="https:\/\/testflight\.apple\.com\/join\/RxvjfM4U"[^>]*>/;
+for (const [label, html] of [["Chinese product page", product], ["English product page", productEn]]) {
+  assert.match(html, testFlightLink, `${label}: incorrect TestFlight URL or disabled control`);
+}
 
 const manifest = JSON.parse(readFileSync(join(dist, "manifest.webmanifest"), "utf8"));
 for (const icon of ["icon-192.png", "icon-512.png", "icon-maskable-512.png"]) {
