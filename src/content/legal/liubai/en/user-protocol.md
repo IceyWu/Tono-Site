@@ -59,4 +59,4 @@ The developer may revise these terms as features and services change. Revised te
 
 For any questions about these terms:
 
-Email: [dev@lpalette.cn](mailto:dev@lpalette.cn)
+Email: [contact@tonomemo.com](mailto:contact@tonomemo.com)
