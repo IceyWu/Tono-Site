@@ -59,4 +59,4 @@ updated: 2026-08-29
 
 如您对本协议有任何疑问：
 
-Email: [dev@lpalette.cn](mailto:dev@lpalette.cn)
+Email: [contact@tonomemo.com](mailto:contact@tonomemo.com)
