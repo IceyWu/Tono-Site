@@ -51,4 +51,4 @@ updated: 2026-08-29
 
 如果您有任何问题或建议，请通过以下方式联系：
 
-Email: [dev@lpalette.cn](mailto:dev@lpalette.cn)
+Email: [contact@tonomemo.com](mailto:contact@tonomemo.com)
