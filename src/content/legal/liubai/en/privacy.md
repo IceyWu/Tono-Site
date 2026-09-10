@@ -61,4 +61,4 @@ This policy may be updated as the App changes. Revised content and its effective
 
 For any privacy-related questions:
 
-Email: [dev@lpalette.cn](mailto:dev@lpalette.cn)
+Email: [contact@tonomemo.com](mailto:contact@tonomemo.com)
