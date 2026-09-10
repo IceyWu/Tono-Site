@@ -51,4 +51,4 @@ Deleting the App removes its local copy from the current device. Content already
 
 For questions or suggestions:
 
-Email: [dev@lpalette.cn](mailto:dev@lpalette.cn)
+Email: [contact@tonomemo.com](mailto:contact@tonomemo.com)
