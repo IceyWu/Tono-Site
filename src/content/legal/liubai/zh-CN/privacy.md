@@ -61,4 +61,4 @@ updated: 2026-08-29
 
 如您有任何隐私方面的疑问：
 
-Email: [dev@lpalette.cn](mailto:dev@lpalette.cn)
+Email: [contact@tonomemo.com](mailto:contact@tonomemo.com)
